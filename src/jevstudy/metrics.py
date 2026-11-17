@@ -59,14 +59,44 @@ def auroc(scores: Sequence[float], labels: Sequence[int]) -> float:
     negatives = len(labels) - positives
     if not positives or not negatives:
         return math.nan
-    wins = 0.0
-    for i, (score_i, label_i) in enumerate(zip(scores, labels)):
-        if label_i != 1:
-            continue
-        for score_j, label_j in zip(scores, labels):
-            if label_j == 0:
-                wins += 1.0 if score_i > score_j else 0.5 if score_i == score_j else 0.0
-    return wins / (positives * negatives)
+    ordered = sorted(zip(scores, labels), key=lambda pair: pair[0])
+    positive_ranks = 0.0
+    start = 0
+    while start < len(ordered):
+        end = start + 1
+        while end < len(ordered) and ordered[end][0] == ordered[start][0]:
+            end += 1
+        mean_rank = (start + 1 + end) / 2
+        positive_ranks += mean_rank * sum(label == 1 for _, label in ordered[start:end])
+        start = end
+    return (positive_ranks - positives * (positives + 1) / 2) / (positives * negatives)
+
+
+def spearman(first: Sequence[float], second: Sequence[float]) -> float:
+    if len(first) != len(second) or len(first) < 2:
+        raise ValueError("score lists must have equal length of at least two")
+    rank_a, rank_b = _ranks(first), _ranks(second)
+    mean_a = sum(rank_a) / len(rank_a)
+    mean_b = sum(rank_b) / len(rank_b)
+    numerator = sum((a - mean_a) * (b - mean_b) for a, b in zip(rank_a, rank_b))
+    denom_a = sum((a - mean_a) ** 2 for a in rank_a)
+    denom_b = sum((b - mean_b) ** 2 for b in rank_b)
+    return numerator / math.sqrt(denom_a * denom_b) if denom_a and denom_b else math.nan
+
+
+def _ranks(values: Sequence[float]) -> list[float]:
+    result = [0.0] * len(values)
+    order = sorted(range(len(values)), key=lambda index: values[index])
+    start = 0
+    while start < len(order):
+        end = start + 1
+        while end < len(order) and values[order[end]] == values[order[start]]:
+            end += 1
+        mean_rank = (start + 1 + end) / 2
+        for index in order[start:end]:
+            result[index] = mean_rank
+        start = end
+    return result
 
 
 def risk_coverage(scores: Sequence[float], correct: Sequence[int]) -> list[tuple[float, float]]:

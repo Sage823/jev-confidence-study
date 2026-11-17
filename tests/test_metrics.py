@@ -9,6 +9,10 @@ from jevstudy.metrics import (accuracy, auroc, aurc, brier_multiclass, ece,
 
 
 class MetricTests(unittest.TestCase):
+    def test_auroc_ties_and_spearman(self):
+        from jevstudy.metrics import spearman
+        self.assertAlmostEqual(auroc([0.5, 0.5, 0.9, 0.1], [1, 0, 1, 0]), 0.875)
+        self.assertAlmostEqual(spearman([1, 2, 3], [3, 2, 1]), -1.0)
     def test_hand_computable_metrics(self):
         self.assertEqual(accuracy([1, 0, 1]), 2 / 3)
         self.assertAlmostEqual(auroc([0.9, 0.2, 0.8, 0.1], [1, 0, 1, 0]), 1.0)

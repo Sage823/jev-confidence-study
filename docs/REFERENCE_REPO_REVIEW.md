@@ -20,16 +20,16 @@ The harness README describes:
 - Frozen inputs and a SHA-256 manifest for the paper's conditions. The repository says D3 texts are not redistributed; it keeps IDs and rebuild instructions.
 - Colab notebooks for open model runs and several stages of analysis.
 
-These existing assets mean a full API runner, resumability, provenance, and several baseline analyses are already available in a nearby project. Our current build deliberately does not reproduce those parts yet: it is an offline educational scaffold and has no API or model runtime dependencies.
+These assets provide a close engineering reference. Our current build has independently written Jev and optional Qwen paths, but still lacks automatic resume and retries.
 
 ## Reuse decision
 
 | Asset or pattern | Could help us later? | Current action |
 |---|---:|---|
 | Frozen-input manifest / request hashing | Yes, for protocol freeze | Reimplement a small version for our own inputs; do not copy their records. |
-| Append-only JSONL + resume + retry/error provenance in `harness.py` | Yes, for a real Jev run | Inspect and adapt only after the offline schema is stable and the network-run design is approved by the team. |
-| Jev HTTP backend | Yes, if our request schema matches and license/terms permit | Do not include in this API-free milestone. Later, verify endpoint behavior, API terms, model pinning, and secret handling first. |
-| Their local-model adapters | Probably not directly | Their model families differ from Qwen3; use as design reference, write a Qwen adapter separately. |
+| Append-only JSONL + resume + retry/error provenance in `harness.py` | Yes | We use new-run append-only JSONL and error records; resume/retry remain open. |
+| Jev HTTP backend | Yes | Our independent Jev adapter follows TypeSafe's official API docs. |
+| Their local-model adapters | Mostly a design reference | Our independent Qwen3 adapter uses local Transformers. |
 | Calibration/metrics scripts | Possibly | Compare formulas and conventions against our hand-computable tests; reuse only a small verified function if it materially saves time. |
 | Their frozen benchmark data, prompts, result tables | No for our proposed benchmarks | Do not copy. They are not our five datasets and their results cannot serve as our results. |
 

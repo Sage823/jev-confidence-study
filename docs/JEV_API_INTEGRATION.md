@@ -16,7 +16,7 @@
 `--input` 接收 UTF-8 JSONL，每行一条规范化题目记录。最少需要：
 
 ```json
-{"item_id":"sciq-test-1","domain":"science","split":"test","question":"Which planet is known as the Red Planet?","options":{"A":"Venus","B":"Mars","C":"Jupiter","D":"Mercury"},"gold_key":"B","option_order":["A","B","C","D"],"source":{"dataset":"SciQ","revision":"..."}}
+{"item_id":"sciq:test:example","domain":"sciq","split":"test","condition_id":"canonical_order","question":"Which planet is known as the Red Planet?","options":{"A":"Venus","B":"Mars","C":"Jupiter","D":"Mercury"},"gold_key":"B","option_order":["A","B","C","D"],"source":{"dataset":"sciq","revision":"PINNED_SOURCE_COMMIT"}}
 ```
 
 `gold_key` 只用于本地评价，不会放进 API 请求。`options` 的键必须稳定；`option_order` 记录展示顺序。不同模型应使用同一份 item 文件和同一顺序条件。
@@ -46,13 +46,13 @@ python -m jevstudy run-jev --input data\items.jsonl --out runs\jev-pilot --model
 
 - `predictions.jsonl`：统一预测记录；保留 API 原始响应、原始概率、归一化概率、模型版本、usage 和延迟。
 - `errors.jsonl`：逐题调用失败记录；有失败时命令返回非零状态。
-- `run_metadata.json`：模型、输入路径、请求数和成功/失败数。
+- `run_metadata.json`：模型配置、输入文件哈希、请求数和成功/失败数。
 
-概率 key 与请求选项不一致、未知答案 key、无效概率等情况会作为错误记录，不会静默丢弃。成功记录才进入分析。现在每题发一条 Choice 请求；self-report 与多次采样尚未接入，需要作为额外、有明确预算的实验条件增加。
+概率 key 与请求选项不一致、未知答案 key、无效概率等情况会作为错误记录，不会静默丢弃。成功记录才进入分析。现在每题发一条 Choice 请求；Jev 的 self-report 与多次采样没有接口路径，报告将它们标为不可用。若提供 `--input-usd-per-million` 和 `--output-usd-per-million`，程序根据返回 token 数计算估算费用；未提供时费用保持缺失。
 
 ## 当前边界
 
 - 这是 Jev 的 API 接入点，不是完整实验适配层。
-- 没有自动重试、并发调度、断点续跑或调用成本折算；正式大规模运行前应补上并测试。
+- 没有自动重试、并发调度或断点续跑；正式大规模运行前需解决中断后续跑和失败重试策略。
 - `jev-1.13.0` 是为匹配原 proposal 选择的版本。正式调用前需确认账号当前可用版本；将实际响应中的 `model` 字段作为运行证据。
-- Qwen3 仍需另行实现本地推理 adapter；本文件只接 Jev。
+- Qwen3 的本地适配器在 `src/jevstudy/adapters/qwen_local.py`；本文件只说明 Jev。

@@ -40,7 +40,12 @@ def extract_signals(row: dict[str, Any]) -> dict[str, float]:
     }
     if "self_report_probability" in row:
         signals["self_report"] = self_report(row)
-    if row.get("sampled_answer_keys"):
+    samples = row.get("sampled_answer_keys", [])
+    if samples and any(key in row["options"] for key in samples):
         signals["sample_consistency"] = sample_consistency(row)
+    for budget in (5, 10, 20):
+        if len(samples) >= budget and all(key in row["options"] for key in samples[:budget]):
+            signals[f"sample_consistency_{budget}"] = (
+                sum(key == row["answer_key"] for key in samples[:budget]) / budget)
     return signals
 

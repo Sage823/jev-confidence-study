@@ -5,9 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "jev-confidence-study"
 version = "0.1.0"
-description = "Offline scaffold for comparing confidence signals"
+description = "Frozen-input Jev and Qwen confidence-signal study"
 requires-python = ">=3.11"
 dependencies = []
+
+[project.optional-dependencies]
+qwen = ["torch>=2.5", "transformers>=4.51", "accelerate>=1.0"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
