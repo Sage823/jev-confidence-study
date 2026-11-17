@@ -1,8 +1,8 @@
 # Jev Confidence Study — Project Design
 
-**Status:** reviewed design for an offline-first course-project scaffold  
-**Basis:** `proposal/proposal_v2.tex`, the proposal handoff, and the Rafe & Das companion repository  
-**Scope of this version:** a reproducible local analysis pipeline and synthetic simulator. It does not call Jev or another model and does not download or redistribute benchmark data.
+**Status:** reviewed design for an offline-first scaffold with an explicit Jev API path
+**Basis:** `proposal/proposal_v2.tex`, the proposal handoff, and the Rafe & Das companion repository
+**Scope of this version:** a reproducible local analysis pipeline, synthetic simulator, and optional Jev HTTP adapter. No network request occurs unless the user explicitly runs `run-jev`; this build does not download or redistribute benchmark data.
 
 For the repository-specific suitability and reuse review, see `REFERENCE_REPO_REVIEW.md`.
 
@@ -25,13 +25,15 @@ The Rafe & Das paper and repository are the nearest implementation reference. Th
 - Signal extraction for selected-option probability, normalized entropy, scalar self-report, and sample agreement.
 - A calibration interface that accepts calibration rows only and applies the fitted mapping to held-out rows; report raw and calibrated scores separately.
 - Command-line entry points for `simulate`, `validate`, and `analyze`, deterministic seeds, and outputs under ignored `runs/`.
-- Offline tests using synthetic fixtures. There must be no HTTP client, credentials, API adapters, or hidden network activity in this milestone.
+- Jev API adapter using the Python standard library, behind an explicit command. `jev-payload` previews the request without network activity; tests use fixture responses and never call the API.
+- Run metadata, raw response/probability preservation, normalized probabilities, usage/latency capture, and per-item error records.
+- Offline tests using synthetic fixtures and mocked API responses. There must be no live API calls during tests.
 
 ### Later research milestones (not implemented here)
 
 1. Freeze a protocol and resolve the sample-count contradiction in the proposal (see design review).
 2. Add dataset adapters after recording source, version/revision, license, required attribution, and allowed use for every source. Keep raw source datasets outside the code repository unless their licenses and course rules clearly permit redistribution.
-3. Add Jev and local Qwen execution adapters only after the offline pipeline is stable; store credentials outside source control, cache raw responses, and record model revision, latency, tokens, failures, and option order.
+3. Add a local Qwen execution adapter. The Jev adapter is present but still needs bounded retries/quotas, resumability, cost accounting, and team validation before a large run.
 4. Add the minimum viable three-domain pilot, then expand only when time and compute allow.
 5. Generate the proposal's plots and tables from frozen run artifacts.
 
@@ -83,10 +85,12 @@ jev_confidence_study/
     PROJECT_DESIGN.md
     DESIGN_REVIEW.md
     REFERENCE_REPO_REVIEW.md
+    JEV_API_INTEGRATION.md
   src/jevstudy/
     __init__.py
     __main__.py
     cli.py
+    adapters/jev_api.py
     schema.py
     simulate.py
     metrics.py
@@ -98,6 +102,7 @@ jev_confidence_study/
     test_metrics.py
     test_simulation.py
     test_calibration.py
+    test_jev_api.py
   runs/                       # generated, ignored, never committed by default
 ```
 
@@ -108,6 +113,8 @@ The workspace-level novice guide and code-review walkthrough live in `proposal/`
 - `python -m jevstudy simulate --seed 4901 --out runs/demo` writes synthetic input/prediction JSONL and run metadata.
 - `python -m jevstudy validate runs/demo` checks schema, identity alignment, provenance, and split discipline.
 - `python -m jevstudy analyze runs/demo --out runs/demo/report.json` writes machine-readable summary metrics.
+- `python -m jevstudy jev-payload item.json --model jev-1.13.0` previews a request locally.
+- `python -m jevstudy run-jev --input data/items.jsonl --out runs/jev-pilot --model jev-1.13.0 --limit 2` makes explicit, billable Jev calls; see `JEV_API_INTEGRATION.md` first.
 - `python -m unittest discover -s tests` runs offline tests; tests require no APIs, external packages, or benchmark downloads.
 
 Each run contains a metadata file with command arguments, seed, package version, timestamp, protocol hash, source kind, and output file hashes. Results are append-only or immutable per run; reruns use a new `run_id` rather than overwriting evidence.
@@ -122,7 +129,7 @@ No third-party runtime libraries are planned in this scaffold. If that changes, 
 
 ## 8. Security and reproducibility boundaries
 
-- No secrets, `.env` files, raw API keys, or user home paths in tracked files.
+- No secrets, `.env` files, raw API keys, or user home paths in tracked files. `run-jev` reads `TYPESAFE_API_KEY` from the current environment only.
 - `runs/`, caches, downloaded datasets, model weights, and raw prompts/responses are ignored by default until a deliberate sharing policy is agreed.
 - Deterministic seed and stable sorting are mandatory for simulation and summaries.
 - Preserve raw response fields needed to audit normalization; derived values do not overwrite raw evidence.

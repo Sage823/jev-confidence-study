@@ -1,6 +1,6 @@
 # Design Review
 
-**Review status:** approved for the offline synthetic scaffold, with research-protocol issues recorded below.  
+**Review status:** original offline scaffold approved; API addendum reviewed for a bounded Jev integration, with research-protocol issues recorded below.
 **Reviewed artifact:** `PROJECT_DESIGN.md`  
 **Review date:** 2026-11-17
 
@@ -57,4 +57,10 @@ The scaffold is ready to code if each check below is covered by a deterministic 
 **Approved for implementation:** offline schema, deterministic simulator, metrics, signals, calibration boundary, reports, and synthetic tests.  
 **Not approved for implementation in this milestone:** real benchmark downloads, model weights, Jev/Qwen API integrations, or claims based on simulated results.  
 **Required before empirical study:** reconcile the counts in §2.1, freeze a complete split/calibration protocol, check each dataset's canonical license and reuse terms, and correct the RQ language about equal accuracy.
+
+## 6. API integration addendum (2026-11-17)
+
+The API adapter in `src/jevstudy/adapters/jev_api.py` was added after checking TypeSafe's official [Quick start](https://docs.typesafe.ai/introduction/quickstart). It submits `model`, `state`, and typed `questions` to the documented System One endpoint, requests a `Choice`, reads the returned choice/probability map and usage fields, and records the resolved model and raw response. The adapter uses only Python's standard-library HTTP client. `run-jev` is the only command that sends requests; payload preview and all tests are offline.
+
+The API contract is covered by fixture-based tests, not a live call. The integration is intentionally not yet a production runner: there is no automatic retry, checkpoint/resume, rate scheduler, dollar-cost calculation, or Qwen adapter. Since a timeout may occur after the provider received a request, automatic retries are disabled to avoid unintentionally duplicating billable calls. Before a large experiment, pin a model version, do a small authorized pilot, check the response's actual model field, agree on quota/cost limits, and complete the protocol/license items above.
 
